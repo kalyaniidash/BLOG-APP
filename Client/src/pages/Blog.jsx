@@ -4,24 +4,74 @@ import { assets, blog_data, comments_data } from '../assets/assets'
 import Navbar from '../components/Navbar'
 import Moment from 'moment'
 import Footer from '../components/Footer'
+import Loader from '../components/Loader'
+import { useAppContext } from '../contest/AppContext'
+import toast from 'react-hot-toast'
 
 const Blog= ()=> {
   const{id} = useParams()
+  const {axios} = useAppContext()
   const[data,setData] = useState(null)
   const[comments,setComments] = useState([])
   const[name,setName] = useState('')
   const[content,setContent] = useState('')
 
   const fetchBlogData = async()=>{
-    const data = blog_data.find(item=>item._id===id)
-    setData(data)
+      try{
+        {
+          const {data} = await axios.get(`/api/blog/${id}`)
+          data.success? setData(data.blog):toast.error(data.message)
+        }
+      }  
+      catch(error)
+      {
+           toast.error(error.message)
+      }
   }
   const fetchComments = async()=>{
-    setComments(comments_data)
+    try{
+        const {data}  = await axios.post(`/api/blog/comments`,{blogId:id}
+        ) 
+        if(data.success)
+        {
+          setComments(data.comments)
+        }
+        else{
+          toast.error(data.message)
+        }
+    }
+    catch(error)
+    {
+        toast.error(data.message)
+    }
   }
-  const  addComment = async(e)=>{
-    e.preventDefault();
+  const addComment = async (e) => {
+  e.preventDefault(); 
+
+  if (!name.trim() || !content.trim()) {
+    toast.error("Name and comment cannot be empty.");
+    return;
   }
+
+  try {
+    const { data } = await axios.post(`/api/blog/addcomments`, {
+      blog: id,
+      name,
+      content,
+    });
+
+    if (data.success) {
+      toast.success(data.message);
+      setName('');
+      setContent('');
+    } else {
+      toast.error(data.message);
+    }
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
+
   useEffect(()=>{
       fetchBlogData()
       fetchComments()
@@ -81,7 +131,7 @@ const Blog= ()=> {
       </div>
    <Footer/>
       </div>
-  ):<div> Loding....</div>
+  ):<Loader/>
 }
 
 export default Blog
